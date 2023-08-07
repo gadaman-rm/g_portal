@@ -1,0 +1,22 @@
+{
+  "name": "g_portal",
+  "version": "1.0.0",
+  "description": "IOT Server",
+  "main": "g_portal.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gadaman-rm/g_portal.git"
+  },
+  "keywords": [
+    "IOT"
+  ],
+  "author": "gadaman-rm",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gadaman-rm/g_portal/issues"
+  },
+  "homepage": "https://github.com/gadaman-rm/g_portal#readme"
+}
