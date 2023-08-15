@@ -244,6 +244,7 @@ class GPortalServer extends EventEmitter {
   getIotDevices() {
     let G_iotDevices_c = _.cloneDeep(this.G_iotDevices);
     Utility.deleteIgnoredObj(G_iotDevices_c);
+    if(!G_iotDevices_c)
     Object.keys(G_iotDevices_c).forEach(device => {
       G_iotDevices_c[device]['connected'] = this.G_iotDevices[device]['G_connection'].connected;
     });
@@ -253,6 +254,7 @@ class GPortalServer extends EventEmitter {
   getcontrolDevices() {
     let G_controlDevices_c = _.cloneDeep(this.G_controlDevices);
     Utility.deleteIgnoredObj(G_controlDevices_c);
+    if(!G_controlDevices_c)
     Object.keys(G_controlDevices_c).forEach(device => {
       if (this.G_controlDevices[device]['G_connection'])
         G_controlDevices_c[device]['connected'] = this.G_controlDevices[device]['G_connection'].connected;
