@@ -3,8 +3,8 @@ const WebSocketServer = require("websocket").server;
 const EventEmitter = require("events");
 const url = require("url");
 const jwt = require("jsonwebtoken");
-const _ = require('lodash');
-const Utility = require('./Utility');
+const _ = require("lodash");
+const Utility = require("./Utility");
 
 class GPortalServer extends EventEmitter {
   G_options;
@@ -41,7 +41,10 @@ class GPortalServer extends EventEmitter {
       const tokenFromUrl = parsedUrl.pathname.substring(1);
       this.validateJwt(tokenFromUrl, options.secret)
         .then((decodedJWT) => {
-          if (decodedJWT["G_type"] == undefined || decodedJWT["G_id"] == undefined) {
+          if (
+            decodedJWT["G_type"] == undefined ||
+            decodedJWT["G_id"] == undefined
+          ) {
             this.emit("jwtIdError", decodedJWT);
             return;
           }
@@ -56,8 +59,7 @@ class GPortalServer extends EventEmitter {
           if (G_connection["G_type"] == "iotDevice") {
             this.iotDevice_addConnection(G_connection);
             this.iotDevice_getAndUpdateControlDevices(G_connection);
-          }
-          else if (G_connection["G_type"] == "controlDevice") {
+          } else if (G_connection["G_type"] == "controlDevice") {
             this.controlDevice_addConnection(G_connection);
           }
 
@@ -97,7 +99,9 @@ class GPortalServer extends EventEmitter {
 
   async processMsg(G_connection, receivedJSONObj) {
     if (G_connection.G_type == "iotDevice") {
-      while (this.G_iotDevices[G_connection.G_id]["G_controlDevices"] == undefined)
+      while (
+        this.G_iotDevices[G_connection.G_id]["G_controlDevices"] == undefined
+      )
         await Utility.delay(100);
       if (receivedJSONObj.G_msg_type == "introduction") {
         this.emit("introduction", receivedJSONObj);
@@ -137,7 +141,7 @@ class GPortalServer extends EventEmitter {
           // console.log("Found document:", foundIotDevice);
           this.iotDevice_addControlDevices(
             G_connection,
-            foundIotDevice.G_controlDevices,
+            foundIotDevice.G_controlDevices
           );
         } else {
           // console.log(`No ioDevice id: ${G_connection.G_id}`);
@@ -169,10 +173,12 @@ class GPortalServer extends EventEmitter {
 
     Object.keys(G_last_controlDevices).forEach((controlDevice) => {
       this.G_iotDevices[G_connection.G_id]["G_controlDevices"][controlDevice] =
-      {
-        ...this.G_iotDevices[G_connection.G_id]["G_controlDevices"][controlDevice],//the last updated
-        ...G_last_controlDevices[controlDevice],//new fetched from db
-      };
+        {
+          ...this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+            controlDevice
+          ], //the last updated
+          ...G_last_controlDevices[controlDevice], //new fetched from db
+        };
     });
 
     //console.log("ControlDeviceAdded", this.G_iotDevices[G_connection.G_id]["G_controlDevices"])
@@ -182,24 +188,41 @@ class GPortalServer extends EventEmitter {
     return new Promise((resolve, reject) => {
       // Iterate through G_controlDevices and set 'access' to 2 for devices with 'access' equal to 1
       this.G_iotDevices[G_connection.G_id]["G_controlDevices"] &&
-        Object.keys(this.G_iotDevices[G_connection.G_id]["G_controlDevices"]).forEach(
-          (controlDevice) => {
-            if (this.G_iotDevices[G_connection.G_id]["G_controlDevices"][controlDevice]['access'] == 1)
-              this.G_iotDevices[G_connection.G_id]["G_controlDevices"][controlDevice]['access'] = 2;
-          }
-        );
+        Object.keys(
+          this.G_iotDevices[G_connection.G_id]["G_controlDevices"]
+        ).forEach((controlDevice) => {
+          if (
+            this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+              controlDevice
+            ]["access"] == 1
+          )
+            this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+              controlDevice
+            ]["access"] = 2;
+        });
 
-      if (!this.G_iotDevices[G_connection.G_id]["G_controlDevices"][receivedJSONObj.G_owner])
-        this.G_iotDevices[G_connection.G_id]["G_controlDevices"][receivedJSONObj.G_owner] = {};
+      if (
+        !this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+          receivedJSONObj.G_owner
+        ]
+      )
+        this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+          receivedJSONObj.G_owner
+        ] = {};
 
-      this.G_iotDevices[G_connection.G_id]["G_controlDevices"][receivedJSONObj.G_owner]['access'] = 1;
+      this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+        receivedJSONObj.G_owner
+      ]["access"] = 1;
 
       this.G_options.db
         .updateOne(
           this.G_options.dbName,
           this.G_options.iotDevicesCollectionName,
           { G_id: G_connection.G_id },
-          { G_controlDevices: this.G_iotDevices[G_connection.G_id]["G_controlDevices"] }
+          {
+            G_controlDevices:
+              this.G_iotDevices[G_connection.G_id]["G_controlDevices"],
+          }
         )
         .then((result) => {
           // Uncomment the next line if you want to log the result.
@@ -215,20 +238,23 @@ class GPortalServer extends EventEmitter {
 
   iotDevice_updateControlDeviceList(G_connection) {
     this.G_iotDevices[G_connection.G_id]["G_controlDevices"] &&
-      Object.keys(this.G_iotDevices[G_connection.G_id]["G_controlDevices"]).forEach(
-        (controlDevice) => {
-          if (!this.G_controlDevices)
-            this.G_controlDevices = {};
+      Object.keys(
+        this.G_iotDevices[G_connection.G_id]["G_controlDevices"]
+      ).forEach((controlDevice) => {
+        if (!this.G_controlDevices) this.G_controlDevices = {};
 
-          if (!this.G_controlDevices[controlDevice])
-            this.G_controlDevices[controlDevice] = {};
+        if (!this.G_controlDevices[controlDevice])
+          this.G_controlDevices[controlDevice] = {};
 
-          this.G_controlDevices[controlDevice][G_connection.G_id] = {};
-          this.G_controlDevices[controlDevice][G_connection.G_id]['G_connection'] = G_connection;
-          this.G_controlDevices[controlDevice][G_connection.G_id]['access'] =
-            this.G_iotDevices[G_connection.G_id]["G_controlDevices"][controlDevice]['access'];
-        }
-      );
+        this.G_controlDevices[controlDevice][G_connection.G_id] = {};
+        this.G_controlDevices[controlDevice][G_connection.G_id][
+          "G_connection"
+        ] = G_connection;
+        this.G_controlDevices[controlDevice][G_connection.G_id]["access"] =
+          this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+            controlDevice
+          ]["access"];
+      });
   }
 
   controlDevice_addConnection(G_connection) {
@@ -244,21 +270,23 @@ class GPortalServer extends EventEmitter {
   getIotDevices() {
     let G_iotDevices_c = _.cloneDeep(this.G_iotDevices);
     Utility.deleteIgnoredObj(G_iotDevices_c);
-    if(!G_iotDevices_c)
-    Object.keys(G_iotDevices_c).forEach(device => {
-      G_iotDevices_c[device]['connected'] = this.G_iotDevices[device]['G_connection'].connected;
-    });
+    if (G_iotDevices_c)
+      Object.keys(G_iotDevices_c).forEach((device) => {
+        G_iotDevices_c[device]["connected"] =
+          this.G_iotDevices[device]["G_connection"].connected;
+      });
     return G_iotDevices_c;
   }
 
   getcontrolDevices() {
     let G_controlDevices_c = _.cloneDeep(this.G_controlDevices);
     Utility.deleteIgnoredObj(G_controlDevices_c);
-    if(!G_controlDevices_c)
-    Object.keys(G_controlDevices_c).forEach(device => {
-      if (this.G_controlDevices[device]['G_connection'])
-        G_controlDevices_c[device]['connected'] = this.G_controlDevices[device]['G_connection'].connected;
-    });
+    if (G_controlDevices_c)
+      Object.keys(G_controlDevices_c).forEach((device) => {
+        if (this.G_controlDevices[device]["G_connection"])
+          G_controlDevices_c[device]["connected"] =
+            this.G_controlDevices[device]["G_connection"].connected;
+      });
     return G_controlDevices_c;
   }
 }
