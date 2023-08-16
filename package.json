@@ -1,6 +1,6 @@
 {
   "name": "g_portal",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "IOT Server",
   "main": "GPortalServer.js",
   "scripts": {

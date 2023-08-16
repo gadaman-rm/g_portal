@@ -41,12 +41,19 @@ class GPortalServer extends EventEmitter {
       const tokenFromUrl = parsedUrl.pathname.substring(1);
       this.validateJwt(tokenFromUrl, options.secret)
         .then((decodedJWT) => {
-          if (
-            decodedJWT["G_type"] == undefined ||
-            decodedJWT["G_id"] == undefined
-          ) {
-            this.emit("jwtIdError", decodedJWT);
-            return;
+          if (this.G_options.decodeJWTValidate) {
+            if (!this.G_options.decodeJWTValidate(decodedJWT)) {
+              this.emit("jwtIdError", decodedJWT);
+              return;
+            }
+          } else {
+            if (
+              decodedJWT["G_type"] == undefined ||
+              decodedJWT["G_id"] == undefined
+            ) {
+              this.emit("jwtIdError", decodedJWT);
+              return;
+            }
           }
           let G_connection = request.accept(null, request.origin);
           G_connection.send(
@@ -55,6 +62,10 @@ class GPortalServer extends EventEmitter {
           G_connection["G_id"] = decodedJWT["G_id"];
           G_connection["G_type"] = decodedJWT["G_type"];
           G_connection["G_ignore"] = true;
+
+          this.G_options.changeGConnection &&
+            this.G_options.changeGConnection(G_connection);
+
           this.emit("acceptConnect", decodedJWT);
           if (G_connection["G_type"] == "iotDevice") {
             this.iotDevice_addConnection(G_connection);
@@ -105,9 +116,11 @@ class GPortalServer extends EventEmitter {
         await Utility.delay(100);
       if (receivedJSONObj.G_msg_type == "introduction") {
         this.emit("introduction", receivedJSONObj);
+        //Change owner and update db in iotDevice list
         this.iotDevice_updateOwnerControlDevice(G_connection, receivedJSONObj)
           .then((result) => {
             //console.log("Document updated:", result);
+            //Change owner in controlDevice list
             this.iotDevice_updateControlDeviceList(G_connection);
           })
           .catch((err) => {
@@ -139,6 +152,8 @@ class GPortalServer extends EventEmitter {
       .then((foundIotDevice) => {
         if (foundIotDevice) {
           // console.log("Found document:", foundIotDevice);
+          if (!foundIotDevice.G_controlDevices)
+            foundIotDevice.G_controlDevices = {};
           this.iotDevice_addControlDevices(
             G_connection,
             foundIotDevice.G_controlDevices
@@ -265,6 +280,16 @@ class GPortalServer extends EventEmitter {
       this.G_controlDevices[G_connection.G_id] = {};
     }
     this.G_controlDevices[G_connection.G_id]["G_connection"] = G_connection;
+  }
+
+  getIotDeviceGConnection(G_id) {
+    if (this.G_iotDevices && this.G_iotDevices[G_id])
+      return this.G_iotDevices[G_id]["G_connection"];
+  }
+
+  getControlDeviceGConnection(G_id) {
+    if (this.G_controlDevices && this.G_controlDevices[G_id])
+      return this.G_controlDevices[G_id]["G_connection"];
   }
 
   getIotDevices() {
