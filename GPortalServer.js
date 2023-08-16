@@ -63,8 +63,7 @@ class GPortalServer extends EventEmitter {
           G_connection["G_type"] = decodedJWT["G_type"];
           G_connection["G_ignore"] = true;
 
-          this.G_options.changeGConnection &&
-            this.G_options.changeGConnection(G_connection);
+          this.G_options.changeGConnection && this.G_options.changeGConnection(G_connection);
 
           this.emit("acceptConnect", decodedJWT);
           if (G_connection["G_type"] == "iotDevice") {
@@ -162,6 +161,7 @@ class GPortalServer extends EventEmitter {
           // console.log(`No ioDevice id: ${G_connection.G_id}`);
           const newDeviceDoc = {
             G_id: G_connection.G_id,
+            G_controlDevices: {}
           };
           this.G_options.db
             .insertOne(
@@ -170,6 +170,10 @@ class GPortalServer extends EventEmitter {
               newDeviceDoc
             )
             .then((result) => {
+              this.iotDevice_addControlDevices(
+                G_connection,
+                {}
+              );
               // console.log("Inserted document:", result);
             })
             .catch((err) => {
@@ -188,12 +192,12 @@ class GPortalServer extends EventEmitter {
 
     Object.keys(G_last_controlDevices).forEach((controlDevice) => {
       this.G_iotDevices[G_connection.G_id]["G_controlDevices"][controlDevice] =
-        {
-          ...this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
-            controlDevice
-          ], //the last updated
-          ...G_last_controlDevices[controlDevice], //new fetched from db
-        };
+      {
+        ...this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+        controlDevice
+        ], //the last updated
+        ...G_last_controlDevices[controlDevice], //new fetched from db
+      };
     });
 
     //console.log("ControlDeviceAdded", this.G_iotDevices[G_connection.G_id]["G_controlDevices"])
@@ -208,7 +212,7 @@ class GPortalServer extends EventEmitter {
         ).forEach((controlDevice) => {
           if (
             this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
-              controlDevice
+            controlDevice
             ]["access"] == 1
           )
             this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
@@ -216,38 +220,41 @@ class GPortalServer extends EventEmitter {
             ]["access"] = 2;
         });
 
-      if (
-        !this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+      if (receivedJSONObj.G_owner) {
+        if (
+          !this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
           receivedJSONObj.G_owner
-        ]
-      )
+          ]
+        )
+          this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
+            receivedJSONObj.G_owner
+          ] = {};
+
         this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
           receivedJSONObj.G_owner
-        ] = {};
+        ]["access"] = 1;
 
-      this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
-        receivedJSONObj.G_owner
-      ]["access"] = 1;
+        this.G_options.db
+          .updateOne(
+            this.G_options.dbName,
+            this.G_options.iotDevicesCollectionName,
+            { G_id: G_connection.G_id },
+            {
+              G_controlDevices:
+                this.G_iotDevices[G_connection.G_id]["G_controlDevices"],
+            }
+          )
+          .then((result) => {
+            // Uncomment the next line if you want to log the result.
+            // console.log("Updated document:", result);
+            resolve(result);
+          })
+          .catch((err) => {
+            console.error("Error updating document:", err);
+            reject(err);
+          });
+      }
 
-      this.G_options.db
-        .updateOne(
-          this.G_options.dbName,
-          this.G_options.iotDevicesCollectionName,
-          { G_id: G_connection.G_id },
-          {
-            G_controlDevices:
-              this.G_iotDevices[G_connection.G_id]["G_controlDevices"],
-          }
-        )
-        .then((result) => {
-          // Uncomment the next line if you want to log the result.
-          // console.log("Updated document:", result);
-          resolve(result);
-        })
-        .catch((err) => {
-          console.error("Error updating document:", err);
-          reject(err);
-        });
     });
   }
 
@@ -267,7 +274,7 @@ class GPortalServer extends EventEmitter {
         ] = G_connection;
         this.G_controlDevices[controlDevice][G_connection.G_id]["access"] =
           this.G_iotDevices[G_connection.G_id]["G_controlDevices"][
-            controlDevice
+          controlDevice
           ]["access"];
       });
   }
