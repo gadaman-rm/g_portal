@@ -81,8 +81,7 @@ class GPortalServer extends EventEmitter {
                 this.emit("jsonReceived", { receivedJSONObj, G_connection });
                 this.processMsg(G_connection, receivedJSONObj);
               } catch (e) {
-                console.log("Error: ", e);
-                this.emit("noJsonMsg", message.utf8Data);
+                this.emit("jsonProcessError", { message: message.utf8Data, G_connection });
               }
             }
           });
@@ -265,14 +264,13 @@ class GPortalServer extends EventEmitter {
         if (!this.G_controlDevices[controlDevice])
           this.G_controlDevices[controlDevice] = {};
 
-        this.G_controlDevices[controlDevice][G_id] = {};
-        this.G_controlDevices[controlDevice][G_id][
-          "G_connection"
-        ] = this.getIotDeviceGConnection(G_id);
-        this.G_controlDevices[controlDevice][G_id]["access"] =
-          this.G_iotDevices[G_id]["G_controlDevices"][
-          controlDevice
-          ]["access"];
+        if (!this.G_controlDevices[controlDevice]["G_iotDevices"])
+          this.G_controlDevices[controlDevice]["G_iotDevices"] = {};
+
+
+        this.G_controlDevices[controlDevice]["G_iotDevices"][G_id] = {};
+        this.G_controlDevices[controlDevice]["G_iotDevices"][G_id]["access"] =
+          this.G_iotDevices[G_id]["G_controlDevices"][controlDevice]["access"];
       });
   }
 
