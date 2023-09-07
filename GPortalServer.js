@@ -89,6 +89,11 @@ class GPortalServer extends EventEmitter {
               }
             }
           });
+
+          G_connection.on("close", (reasonCode, description) => {
+            this.emit("deviceDisconnected", {G_connection ,reasonCode,description});
+          });
+
         })
         .catch((err) => {
           request.reject(403, "Invalid URL");
