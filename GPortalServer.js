@@ -87,13 +87,21 @@ class GPortalServer extends EventEmitter {
                   G_connection,
                 });
               }
+            } else if (message.type === "binary") {
+              this.emit("binaryMessage", {
+                message: message.binaryData,
+                G_connection,
+              });
             }
           });
 
           G_connection.on("close", (reasonCode, description) => {
-            this.emit("deviceDisconnected", {G_connection ,reasonCode,description});
+            this.emit("deviceDisconnected", {
+              G_connection,
+              reasonCode,
+              description,
+            });
           });
-
         })
         .catch((err) => {
           request.reject(403, "Invalid URL");
@@ -125,7 +133,6 @@ class GPortalServer extends EventEmitter {
         this.emit("introduction", { receivedJSONObj, G_connection });
         this.iotDevice_updateOwner(G_connection.G_id, receivedJSONObj.G_owner)
           .then((result) => {
-
             this.iotDevice_updateControlDeviceList(G_connection.G_id);
           })
           .catch((err) => {
@@ -192,7 +199,7 @@ class GPortalServer extends EventEmitter {
 
     Object.keys(G_saved_controlDevices).forEach((controlDevice) => {
       this.G_iotDevices[G_id]["G_controlDevices"][controlDevice] = {
-        ...this.G_iotDevices[G_id]["G_controlDevices"][controlDevice], 
+        ...this.G_iotDevices[G_id]["G_controlDevices"][controlDevice],
         ...G_saved_controlDevices[controlDevice],
       };
     });
